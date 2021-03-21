@@ -1,5 +1,6 @@
 from stitcher import Stitcher
 import os
+from logger import initialise_logger
 
 def main():
     COM_SEP = ' '
@@ -10,7 +11,9 @@ def main():
     CLOSE_COM = 'close'
     AID_COM = 'help'
     COM_ERROR = 'Command not recognised!'
-    
+    LOGS_DIR = os.path.abspath('./logs')
+
+    logger = initialise_logger(LOGS_DIR, __name__)
     directory = os.path.abspath('.')
     aid()
     while True:
@@ -25,7 +28,7 @@ def main():
             elif com.partition(COM_SEP)[0] == SUB_DIR_COM:
                 subDirectories(directory)
             elif com.partition(COM_SEP)[0] == TEMPLATE_COM:
-                template(directory, com.split(COM_SEP)[1], com.split(COM_SEP)[2])
+                template(directory, com.split(COM_SEP)[1], com.split(COM_SEP)[2], logger=logger)
             else:
                 print(COM_ERROR)
         except IndexError:
@@ -67,7 +70,7 @@ def subDirectories(directory: str):
         print(file)
     print()
 
-def template(directory: str, in_file: str, out_file: str = None):
+def template(directory: str, in_file: str, out_file: str = None, passes: int = -1, logger = None):
     OUT_PREFIX = 'out_'
     FEEDBACK = 'Finished stitching in {0}'
     ERROR = 'Error: {0}!'
@@ -75,11 +78,17 @@ def template(directory: str, in_file: str, out_file: str = None):
     if out_file == None:
         out_file = OUT_PREFIX + in_file
     try:
-        Stitcher(directory, in_file, out_file)
-        print(FEEDBACK.format(os.path.join(directory, out_file)))
+        Stitcher(directory, in_file, out_file, passes, logger)
+        if logger is None:
+            print(FEEDBACK.format(os.path.join(directory, out_file)))
+        else:
+            logger.info(FEEDBACK.format(os.path.join(directory, out_file)))
     except Exception as e:
+        if logger is None:
+            print(ERROR.format(e))
+        else:
+            logger.error(ERROR.format(e))
         raise
-        print(ERROR.format(e))
     print()
 
 if __name__ == '__main__':

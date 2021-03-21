@@ -6,7 +6,7 @@ class AttributeScanner(HTMLParser):
         HTMLParser.__init__(self)
         
         if not isinstance(targ_attr, str):
-            raise TypeError('targ_attr must be a string')
+            raise TypeError(f'*targ_attr* must be a string, not a {type(targ_attr)}!')
 
         self.targ_attr = targ_attr
         self.attr_values = list()
