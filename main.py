@@ -10,6 +10,7 @@ def main():
     SUB_DIR_COM = 'list'
     CLOSE_COM = 'close'
     AID_COM = 'help'
+    CLEAN_COM = 'cleanup'
     COM_ERROR = 'Command not recognised!'
     LOGS_DIR = os.path.abspath('./logs')
 
@@ -18,17 +19,21 @@ def main():
     aid()
     while True:
         com = input(PROMPT.format(directory))
+        prefix = com.partition(COM_SEP)[0]
+        args = com.split(COM_SEP)[1:]
         try:
-            if com.partition(COM_SEP)[0] == CLOSE_COM:
+            if prefix == CLOSE_COM:
                 close()
-            elif com.partition(COM_SEP)[0] == AID_COM:
+            elif prefix == AID_COM:
                 aid()
-            elif com.partition(COM_SEP)[0] == NAVIGATE_COM:
-                directory = navigate(directory, com.partition(COM_SEP)[2])
-            elif com.partition(COM_SEP)[0] == SUB_DIR_COM:
+            elif prefix == NAVIGATE_COM:
+                directory = navigate(directory, args[0])
+            elif prefix == SUB_DIR_COM:
                 subDirectories(directory)
-            elif com.partition(COM_SEP)[0] == TEMPLATE_COM:
-                template(directory, com.split(COM_SEP)[1], com.split(COM_SEP)[2], logger=logger)
+            elif prefix == TEMPLATE_COM:
+                template(directory, args[0], args[1], logger=logger)
+            elif prefix == CLEAN_COM:
+                cleanup(directory, logger=logger)
             else:
                 print(COM_ERROR)
         except IndexError:
@@ -43,13 +48,16 @@ def aid():
     NAVIGATE_HELP = 'nav *rel_path*: navigate your direcctory.\n\t*rel_path*: a path to navigate to that is relative to the current directory (\'..\' for the parent path)'
     SUB_DIRECTORIES_HELP = 'list: list all the files and folders in the current directory'
     TEMPLATE_HELP = 'template *in_filename* *out_filename*: stitch HTML files from the current directory into the input file and write it to the output file\n\t*in_filename*: the template filename relative to the current directory\n\t*out_filename*: the name of the output file relative to the current directory'
+    CLEANUP_HELP = 'cleanup: cleanup all the temporary files in the current directory'
 
     print(CLOSE_HELP)
     print(AID_HELP)
     print(NAVIGATE_HELP)
     print(SUB_DIRECTORIES_HELP)
     print(TEMPLATE_HELP)
+    print(CLEANUP_HELP)
     print()
+    return
 
 def navigate(directory: str, addend: str):
     PATH_ERROR = '{0} is not a valid directory!\n'
@@ -69,6 +77,7 @@ def subDirectories(directory: str):
     for file in os.listdir(directory):
         print(file)
     print()
+    return
 
 def template(directory: str, in_file: str, out_file: str = None, passes: int = -1, logger = None):
     OUT_PREFIX = 'out_'
@@ -87,9 +96,40 @@ def template(directory: str, in_file: str, out_file: str = None, passes: int = -
         if logger is None:
             print(ERROR.format(e))
         else:
-            logger.error(ERROR.format(e))
+            logger.error(e)
         raise
     print()
+    return
+
+def cleanup(directory: str, logger = None):
+    TMP_SUFFIX = '.tmp'
+    FEEDBACK = 'Cleaned {} files up'
+    FEEDBACK_ONE = 'Cleaned 1 file up'
+
+    #find temp files
+    to_clean = list()
+    for file in os.listdir(directory):
+        if os.path.splitext(file)[1] == TMP_SUFFIX:
+            to_clean.append(file)
+
+    #remove temp files
+    for file in to_clean:
+        if logger is not None:
+            logger.info(f'Cleaning up {file}')
+        os.remove(os.path.join(directory, file))
+
+    #report success
+    
+    if len(to_clean) == 1:
+        message = FEEDBACK_ONE
+    else:
+        message = FEEDBACK.format(len(to_clean))
+    if logger is None:
+        print(message)
+    else:
+        logger.info(message)
+    print()
+    return
 
 if __name__ == '__main__':
     main()
